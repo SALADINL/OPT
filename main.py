@@ -214,6 +214,70 @@ def str2int(message):
     return int_array
 
 
+def decrypt(path, filename):
+    """
+    This function will call all function needed to decrypt a message
+
+    :param path: location of pads
+    :param filename: location of transmission file
+    :return: void
+    """
+    filename_output = filename[:len(filename)] + 'm'
+    if path[len(path) - 1] == '/':
+        path = path[:len(path) - 1]
+
+    f_input = open(filename, 'rb')
+    buffer = f_input.read()
+    f_input.close()
+
+    pref = buffer[:48]
+    content = buffer[48:-48]
+
+    num_pad = scanner(path, pref)
+    f_key = open(path + '/' + num_pad + 'c', 'rb')
+    keys = f_key.read()
+    f_key.close()
+
+    res = []
+    for i in range(len(content)):
+        v = (int(keys[i]) - int(content[i])) % 255
+        res.append(int(v))
+
+    f_out = open(filename_output, "w")
+    f_out.write(int2str(res))
+    f_out.close()
+
+
+def scanner(path, pref):
+    f_list = glob.glob(path + '/*p')
+    num_pad = ""
+
+    for f_name in f_list:
+        f = open(f_name, 'rb')
+        tmp = f.read()
+        if pref == tmp:
+            num_pad = f_name[len(f_name) - 3:len(f_name) - 1]
+
+        f.close()
+    return num_pad
+
+
+def int2str(bin_array):
+    """
+    Convert an array list of ascii in binary to  string
+
+    :param bin_array: (str) An array list of ascii in binary
+    :return: Returns string which contains the message
+    """
+
+    message = ""
+
+    for ele in bin_array:
+        message += chr(ele)
+
+    return message
+
+
 def main():
     for ele in get_interfaces_names():
         if check_network(ele):
@@ -244,7 +308,11 @@ def main():
 
         encrypt(message, dir)
     elif args.receive:
-        pass
+        if not os.path.exists(args.filename):
+            print('Input file does not exist')
+            sys.exit(1)
+
+        decrypt(dir, args.filename)
     else:
         generate(dir)
 
