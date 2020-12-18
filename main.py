@@ -28,8 +28,31 @@ if opts.receive:
 args = parser.parse_args()
 
 
+def get_interfaces_names():
+    """
+    :return: list of network interface name
+    """
+    return os.listdir('/sys/class/net/')
+
+
+def check_network(ifname):
+    """
+    Function check if an interfaces is UP
+
+    :param ifname: name of the interface
+    :return: True if the interfaces is UP
+    """
+
+    file = os.open("/sys/class/net/" + ifname + "/operstate", os.O_RDONLY)
+    output = os.read(file, 50)
+    return True if "up" in str(output) else False
+
+
 def main():
-    pass
+    for ele in get_interfaces_names():
+        if check_network(ele):
+            print("Network detected")
+            sys.exit(1)
 
 
 if __name__ == '__main__':
