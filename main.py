@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import glob
 import os
 import sys
 
@@ -109,6 +110,110 @@ def generate_files(path):
     rand.close()
 
 
+def read_txt(filename):
+    """
+    This function read a txt file and store it in a string.
+
+    :param filename: Path of the txt file.
+    :return: Return a string within the message
+    """
+
+    response = ""
+    file = open(filename, 'r')
+    response = file.read()
+    file.close()
+
+    return response
+
+
+def check_message(message):
+    """
+    Check the message don't exceed 2000 char
+    """
+    return False if len(message) > 20000 else True
+
+
+def encrypt(message, path):
+    """
+    This function will call all function need to encrypt message
+
+    :param message: string contains message
+    :param path: location of pads needed
+    :return: void
+    """
+    if path[len(path) - 1] == '/':
+        path = path[:len(path) - 1]
+
+    if glob.glob(path + '/*c') is None:
+        print("Can't find file XXc")
+        sys.exit(1)
+
+    f_pad = sorted(glob.glob(path + '/*c'))[0]
+    num_pad = f_pad[len(f_pad) - 3:len(f_pad) - 1]
+    filename = create_transmission(path, num_pad)
+
+    f_out = open(filename, 'wb')
+
+    f_pref = open(path + '/' + num_pad + 'p', 'rb')
+    pref = f_pref.read()
+    f_pref.close()
+
+    file = open(f_pad, "rb")
+    buffer = file.read()
+    int_array = str2int(message)
+    res = []
+    idx = 0
+    for b in buffer:
+        if len(int_array) == idx:
+            pass
+            # res.append((int(b) - ord(' ')) % 255)
+        else:
+            v = (int(b) - int_array[idx]) % 255
+            print(b)
+            print(v)
+            print()
+            res.append(v)
+            idx += 1
+
+    f_suff = open(path + '/' + num_pad + 's', 'rb')
+    suff = f_suff.read()
+    f_suff.close()
+
+    res = pref + bytes(res) + suff
+    f_out.write(res)
+    f_out.close()
+
+
+def create_transmission(path, num_pad):
+    """
+    Create a new file with the filename contains location and num pad
+
+    :param path: location of pads
+    :param num_pad: number of the pad used
+    :return: name of the new file
+    """
+    path = path.replace('/', "-") + '-' + num_pad + 't'
+    open(path, "w+")
+
+    return path
+
+
+def str2int(message):
+    """
+    Convert string to an array list of ascii in integer
+
+    :param message: (str) A string which contains the message
+    :return: Returns array list of ascii in integer
+    """
+
+    int_array = []
+
+    for ele in message:
+        int_array.append(ord(ele))
+
+    return int_array
+
+
 def main():
     for ele in get_interfaces_names():
         if check_network(ele):
@@ -117,8 +222,27 @@ def main():
 
     dir = args.directory
 
+    if args.send or args.receive:
+        if not os.path.exists(dir):
+            print('Repository does not exist !')
+            sys.exit(1)
+
     if args.send:
-        pass
+        if args.filename:
+            if not os.path.exists(args.filename):
+                print('Input file does not exist')
+                sys.exit(1)
+            message = read_txt(args.filename)
+        elif args.text:
+            message = args.text
+        else:
+            message = input("Enter your message : ")
+
+        if not check_message(message):
+            print('Too long message !')
+            sys.exit(1)
+
+        encrypt(message, dir)
     elif args.receive:
         pass
     else:
