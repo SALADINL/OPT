@@ -4,6 +4,7 @@ import argparse
 import glob
 import os
 import sys
+import subprocess
 
 parser = argparse.ArgumentParser(description='This program provide tools to crypt and uncrypt message from files.',
                                  epilog='Enjoy the program!')
@@ -133,6 +134,17 @@ def check_message(message):
     return False if len(message) > 20000 else True
 
 
+def shred_file(path, num_pad):
+    """
+    Shred the pad used to encrypt
+
+    :param path: location of the pad
+    :param num_pad: number of the pad
+    :return: void
+    """
+    subprocess.run(['shred', '-u', path + '/' + num_pad])
+
+
 def encrypt(message, path):
     """
     This function will call all function need to encrypt message
@@ -169,9 +181,6 @@ def encrypt(message, path):
             # res.append((int(b) - ord(' ')) % 255)
         else:
             v = (int(b) - int_array[idx]) % 255
-            print(b)
-            print(v)
-            print()
             res.append(v)
             idx += 1
 
@@ -182,6 +191,7 @@ def encrypt(message, path):
     res = pref + bytes(res) + suff
     f_out.write(res)
     f_out.close()
+    shred_file(path, num_pad + 'c')
 
 
 def create_transmission(path, num_pad):
@@ -247,8 +257,18 @@ def decrypt(path, filename):
     f_out.write(int2str(res))
     f_out.close()
 
+    shred_file(path, filename)
+    shred_file(path, num_pad + 'p')
+
 
 def scanner(path, pref):
+    """
+    This function will test every pref-pad to find the correct key
+
+    :param path: location of pads
+    :param pref: list of filename
+    :return: number of the pad which contain right key
+    """
     f_list = glob.glob(path + '/*p')
     num_pad = ""
 
