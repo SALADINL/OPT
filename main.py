@@ -48,11 +48,81 @@ def check_network(ifname):
     return True if "up" in str(output) else False
 
 
+def generate(path):
+    """
+    Void function which call all the needed function to generate repository and pads
+    :param path: Location and name of the repository you want to create
+    :return: void
+    """
+
+    try:
+        os.mkdir(path)
+        print(path, " created with success.")
+    except FileExistsError:
+        print(path, " already exist.")
+    new_path = path + '/' + add_dir(path)
+    generate_files(new_path)
+
+
+def add_dir(path):
+    """
+    :param path: location where create new dir
+    :return: name of the create repository
+    """
+    if nb_directory(path) >= 10000:
+        print("Number directory is exceeded")
+        sys.exit(1)
+    name_dir = str(nb_directory(path)).zfill(4)
+    try:
+        os.mkdir(path + '/' + name_dir)
+    except FileExistsError:
+        print(path, " already exist.")
+
+    return name_dir
+
+
+def nb_directory(path):
+    """
+    :return: the number of dir in this location
+    """
+    return len(os.listdir(path))
+
+
+def generate_files(path):
+    """
+    This functions will create three types of pad a hundred time
+    :param path: location where you want to create pads
+    :return: void
+    """
+    extension = ['p', 's', 'c']
+    with open("/dev/random", "rb") as rand:
+        for i in range(0, 100):
+            for e in extension:
+                name_file = str(i) + e
+                file = open(path + '/' + name_file.zfill(3), "wb")
+                if e == 'c':
+                    bytes_dev = rand.read(2000)
+                else:
+                    bytes_dev = rand.read(48)
+                file.write(bytes_dev)
+                file.close()
+    rand.close()
+
+
 def main():
     for ele in get_interfaces_names():
         if check_network(ele):
             print("Network detected")
             sys.exit(1)
+
+    dir = args.directory
+
+    if args.send:
+        pass
+    elif args.receive:
+        pass
+    else:
+        generate(dir)
 
 
 if __name__ == '__main__':
